@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getTasks, deleteTask, updateTask } from '../services/TaskService'; // Ensure updateTask is imported
+import { getTasks, deleteTask } from '../services/TaskService';
 import TaskForm from './TaskForm';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { makeStyles } from '@mui/styles';
@@ -14,57 +14,74 @@ const useStyles = makeStyles((theme) => ({
 
 const TaskList = () => {
   const classes = useStyles();
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState([]);  // State to store all tasks
+  const [filteredTasks, setFilteredTasks] = useState([]);  // State to store filtered tasks
   const [selectedTask, setSelectedTask] = useState(null); // Store the task to be edited
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [isDeleteConfirmationVisible, setIsDeleteConfirmationVisible] = useState(false); // State for delete confirmation dialog
-  const [taskToDelete, setTaskToDelete] = useState(null); // Store task to be deleted
+  const [searchQuery, setSearchQuery] = useState('');  // State for search query
+  const [isDeleteConfirmationVisible, setIsDeleteConfirmationVisible] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
 
-  const fetchTasks = async () => {
-    const taskList = await getTasks();
-    setTasks(taskList);
-  };
-
+  // Fetch tasks and set them in both `tasks` and `filteredTasks` state
   useEffect(() => {
-    fetchTasks(); // Fetch tasks when component mounts
+    const fetchTasks = async () => {
+      const taskList = await getTasks();
+      setTasks(taskList);
+      setFilteredTasks(taskList);  // Initially, filtered tasks = all tasks
+    };
+
+    fetchTasks();
   }, []);
 
+  // Handle the search input change
+  const handleSearch = (e) => {
+    const query = e.target.value.toLowerCase();  // Convert search query to lowercase for case-insensitive search
+    setSearchQuery(query);
+
+    // Filter tasks based on the search query
+    const filtered = tasks.filter(task => 
+      task.assignedTo.toLowerCase().includes(query) ||  // Check if `assignedTo` contains the query
+      task.description.toLowerCase().includes(query) || // Check if `description` contains the query
+      task.status.toLowerCase().includes(query) ||      // Check if `status` contains the query
+      task.priority.toLowerCase().includes(query)       // Check if `priority` contains the query
+    );
+
+    setFilteredTasks(filtered);  // Update the filtered tasks
+  };
+
   const handleDelete = (task) => {
-    setTaskToDelete(task); // Store the task to be deleted
-    setIsDeleteConfirmationVisible(true); // Open delete confirmation dialog
+    setTaskToDelete(task);
+    setIsDeleteConfirmationVisible(true);
   };
 
   const confirmDelete = async () => {
     if (taskToDelete) {
       await deleteTask(taskToDelete.id);
-      setTasks(tasks.filter(task => task.id !== taskToDelete.id)); // Remove from state
-      setTaskToDelete(null); // Clear the task to be deleted
+      setTasks(tasks.filter(task => task.id !== taskToDelete.id));
+      setFilteredTasks(filteredTasks.filter(task => task.id !== taskToDelete.id));  // Update filtered tasks after delete
+      setTaskToDelete(null);
     }
-    setIsDeleteConfirmationVisible(false); // Close the confirmation dialog
+    setIsDeleteConfirmationVisible(false);
   };
 
   const handleOpenForm = () => {
-    setSelectedTask(null); // Reset for new task
-    setIsFormVisible(true); // Open the modal
+    setSelectedTask(null);
+    setIsFormVisible(true);
   };
 
   const handleEditTask = (task) => {
-    setSelectedTask(task); // Set the task to be edited
-    setIsFormVisible(true); // Open the modal
+    setSelectedTask(task);
+    setIsFormVisible(true);
   };
 
   const handleCloseForm = () => {
-    setIsFormVisible(false); // Close the modal
-    setSelectedTask(null); // Clear the selected task
+    setIsFormVisible(false);
+    setSelectedTask(null);
   };
 
   const handleCloseDeleteConfirmation = () => {
-    setIsDeleteConfirmationVisible(false); // Close confirmation dialog
-    setTaskToDelete(null); // Clear the task to be deleted
-  };
-
-  const handleRefresh = async () => {
-    await fetchTasks(); // Fetch tasks again
+    setIsDeleteConfirmationVisible(false);
+    setTaskToDelete(null);
   };
 
   return (
@@ -73,9 +90,15 @@ const TaskList = () => {
       <div className="toolbar">
         <div className="button-container">
           <Button variant="contained" color="primary" onClick={handleOpenForm}>New Task</Button>
-          <Button variant="contained" color="default" style={{ marginLeft: '10px'}} onClick={handleRefresh}>Refresh</Button>
+          <Button variant="contained" color="default" style={{ marginLeft: '10px' }}>Refresh</Button>
         </div>
-        <input type="text" placeholder="Search tasks..." className="search-bar" />
+        <input 
+          type="text" 
+          placeholder="Search tasks..." 
+          value={searchQuery}  // Bind search input to state
+          onChange={handleSearch}  // Update search query on input change
+          className="search-bar" 
+        />
       </div>
 
       <table>
@@ -90,7 +113,7 @@ const TaskList = () => {
           </tr>
         </thead>
         <tbody>
-          {tasks.map(task => (
+          {filteredTasks.map(task => (
             <tr key={task.id}>
               <td>{task.assignedTo}</td>
               <td>{task.status}</td>
@@ -99,7 +122,7 @@ const TaskList = () => {
               <td>{task.description}</td>
               <td>
                 <Button variant="outlined" onClick={() => handleEditTask(task)}>Edit</Button>
-                <Button variant="outlined" color="secondary" onClick={() => handleDelete(task)}>Delete</Button>
+                <Button variant="outlined" color="secondary" style={{ marginLeft: '10px' }} onClick={() => handleDelete(task)}>Delete</Button>
               </td>
             </tr>
           ))}
@@ -125,7 +148,7 @@ const TaskList = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDeleteConfirmation} color="primary">Cancel</Button>
-          <Button onClick={confirmDelete} color="secondary" style={{ marginLeft: '10px !important' }}>Delete</Button>
+          <Button onClick={confirmDelete} color="secondary">Delete</Button>
         </DialogActions>
       </Dialog>
     </div>
