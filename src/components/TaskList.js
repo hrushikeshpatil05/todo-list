@@ -73,7 +73,7 @@ const TaskList = () => {
       <div className="toolbar">
         <div className="button-container">
           <Button variant="contained" color="primary" onClick={handleOpenForm}>New Task</Button>
-          <Button variant="contained" color="default" style={{ marginLeft: '10px' }} onClick={handleRefresh}>Refresh</Button>
+          <Button variant="contained" color="default" style={{ marginLeft: '10px'}} onClick={handleRefresh}>Refresh</Button>
         </div>
         <input type="text" placeholder="Search tasks..." className="search-bar" />
       </div>
@@ -125,7 +125,7 @@ const TaskList = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDeleteConfirmation} color="primary">Cancel</Button>
-          <Button onClick={confirmDelete} color="secondary">Delete</Button>
+          <Button onClick={confirmDelete} color="secondary" style={{ marginLeft: '10px !important' }}>Delete</Button>
         </DialogActions>
       </Dialog>
     </div>
